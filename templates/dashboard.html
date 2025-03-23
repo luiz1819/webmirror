@@ -145,7 +145,7 @@
                                     </div>
                                     <div class="flex-grow-1 ms-3">
                                         <h6 class="card-subtitle mb-1 text-muted">Armazenamento</h6>
-                                        <h2 class="card-title mb-0">{{ (current_user.websites.with_entities(func.sum(Website.size_bytes)).scalar() or 0) / (1024 * 1024) | round(2) }} MB</h2>
+                                        <h2 class="card-title mb-0">{{ (current_user.websites.count() > 0 and current_user.websites.with_entities(Website.size_bytes).scalar() or 0) / (1024 * 1024) | round(2) }} MB</h2>
                                     </div>
                                 </div>
                             </div>

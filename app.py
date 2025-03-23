@@ -165,7 +165,7 @@ def user_sites():
     # Try Supabase first
     try:
         from utils.supabase_client import get_user_websites
-        supabase_websites = get_user_websites(user_id=current_user.id)
+        supabase_websites = get_user_websites(tenant_id=str(current_user.id))
         
         if supabase_websites:
             # Convert to Website objects
