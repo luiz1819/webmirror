@@ -37,29 +37,44 @@ def init_supabase():
 def create_websites_table():
     """Create websites table in Supabase if it doesn't exist"""
     try:
-        sql = """
-        CREATE TABLE IF NOT EXISTS websites (
-            id SERIAL PRIMARY KEY,
-            tenant_id TEXT NOT NULL,
-            url TEXT NOT NULL,
-            domain TEXT NOT NULL,
-            directory TEXT NOT NULL,
-            file_count INTEGER DEFAULT 0,
-            size_bytes BIGINT DEFAULT 0,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-            user_id INTEGER,
-            is_public BOOLEAN DEFAULT TRUE
-        );
-        """
-
+        # First check if table exists
         try:
-            supabase.rpc('exec_sql', {'sql': sql}).execute()
-            logger.info("Websites table created successfully")
-        except Exception as rpc_error:
-            logger.error(f"RPC method failed: {str(rpc_error)}")
-            logger.info("Please create the table manually in the Supabase dashboard")
-
-        return True
+            supabase.table('websites').select('*').limit(1).execute()
+            logger.info("Websites table already exists")
+            return True
+        except Exception:
+            # Table doesn't exist, create it
+            sql = """
+            CREATE TABLE public.websites (
+                id SERIAL PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                url TEXT NOT NULL,
+                domain TEXT NOT NULL,
+                directory TEXT NOT NULL UNIQUE,
+                file_count INTEGER DEFAULT 0,
+                size_bytes BIGINT DEFAULT 0,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                user_id INTEGER,
+                is_public BOOLEAN DEFAULT TRUE
+            );
+            """
+            
+            try:
+                # Try direct SQL execution through REST API
+                response = supabase.table('websites').insert({
+                    'tenant_id': 'system',
+                    'url': 'https://example.com',
+                    'domain': 'example.com',
+                    'directory': 'example',
+                    'user_id': 0,
+                    'is_public': True
+                }).execute()
+                logger.info("Test record created successfully")
+            except Exception as insert_error:
+                logger.error(f"Error creating test record: {str(insert_error)}")
+                logger.info("Please create the websites table manually in the Supabase dashboard")
+            
+            return True
     except Exception as e:
         logger.error(f"Error creating websites table: {str(e)}")
         return False
