@@ -115,6 +115,7 @@ def site_builder():
 @login_required
 def dashboard():
     """Render the dashboard page with statistics"""
+    from sqlalchemy import func
     # Retrieve recent websites for the current user (limit to 5)
     recent_websites = []
     
