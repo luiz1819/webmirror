@@ -94,13 +94,46 @@ def create_website_table():
             logger.error(f"Error creating websites table: {str(e)}")
             return False
 
-def get_recent_websites(limit=5):
-    """Get recent websites from Supabase"""
+def get_recent_websites(limit=5, user_id=None):
+    """
+    Get recent websites from Supabase
+    
+    Args:
+        limit (int): Maximum number of websites to return
+        user_id (int, optional): Filter by user ID if provided
+        
+    Returns:
+        list: List of website records
+    """
     try:
-        response = supabase.table('websites').select('*').order('created_at', desc=True).limit(limit).execute()
+        query = supabase.table('websites').select('*')
+        
+        # Filter by user_id if provided
+        if user_id:
+            query = query.eq('user_id', user_id)
+            
+        # Order and limit
+        response = query.order('created_at', desc=True).limit(limit).execute()
         return response.data
     except Exception as e:
         logger.error(f"Error getting recent websites: {str(e)}")
+        return []
+        
+def get_user_websites(user_id):
+    """
+    Get all websites for a specific user
+    
+    Args:
+        user_id (int): User ID to filter by
+        
+    Returns:
+        list: List of website records
+    """
+    try:
+        response = supabase.table('websites').select('*').eq('user_id', user_id).order('created_at', desc=True).execute()
+        return response.data
+    except Exception as e:
+        logger.error(f"Error getting user websites: {str(e)}")
         return []
 
 def create_website(website_data):
