@@ -188,6 +188,8 @@ def user_sites():
 @login_required
 def profile():
     """User profile page with statistics"""
+    if not current_user.is_authenticated:
+        return redirect(url_for('landing'))
     from sqlalchemy import func
     return render_template('profile.html', func=func, Website=Website)
 
