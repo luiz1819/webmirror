@@ -187,8 +187,9 @@ def user_sites():
 @app.route('/profile')
 @login_required
 def profile():
-    """User profile page"""
-    return render_template('profile.html')
+    """User profile page with statistics"""
+    from sqlalchemy import func
+    return render_template('profile.html', func=func, Website=Website)
 
 @app.route('/clone', methods=['POST'])
 @login_required
