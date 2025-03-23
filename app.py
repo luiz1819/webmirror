@@ -106,6 +106,21 @@ def index():
     """Redirect to dashboard"""
     return redirect(url_for('dashboard'))
 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """Render the dashboard page with statistics"""
+    try:
+        # Get user's recent websites
+        recent_websites = Website.query.filter_by(user_id=current_user.id)\
+            .order_by(Website.created_at.desc())\
+            .limit(5)\
+            .all()
+        return render_template('dashboard.html', recent_websites=recent_websites)
+    except Exception as e:
+        flash(f'Erro ao carregar dashboard: {str(e)}', 'danger')
+        return redirect(url_for('landing'))
+
 @app.route('/site-builder')
 @login_required
 def site_builder():
