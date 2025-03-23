@@ -1,0 +1,143 @@
+Criar um clonador de páginas web usando Python, com ferramentas como Selenium para automação, BeautifulSoup ou requests para web scraping, e FastAPI ou Flask para construir uma interface, é uma tarefa interessante. Abaixo, vou te fornecer um template básico para começar.
+
+Estrutura do Projeto
+
+
+`
+web_cloner/
+│
+├── app.py
+├── requirements.txt
+└── templates/
+└── index.html
+`
+
+requirements.txt
+
+
+Neste arquivo, você listará as bibliotecas necessárias:
+
+`plaintext
+selenium
+beautifulsoup4
+requests
+fastapi
+uvicorn
+aiofiles
+`
+
+app.py
+
+
+Este é o arquivo principal do seu aplicativo:
+
+`python
+from fastapi import FastAPI, UploadFile, Form
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+import os
+import requests
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+with open("templates/index.html") as f:
+return f.read()
+
+@app.post("/clone")
+async def clone_website(url: str = Form(...)):
+# Criar diretório para armazenar arquivos
+dirname = url.split("//")[-1].replace("/", "")
+os.makedirs(f"static/{dirname}", existok=True)
+
+# Usando Selenium para baixar a página
+options = webdriver.ChromeOptions()
+options.add_argument('--headless') # Para não abrir a janela do navegador
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+driver.get(url)
+
+# Capturando o HTML da página
+html = driver.page_source
+with open(f"static/{dir_name}/index.html", "w", encoding='utf-8') as f:
+f.write(html)
+
+# Usando BeautifulSoup para extrair CSS e JS
+soup = BeautifulSoup(html, "html.parser")
+
+# Baixando CSS
+for link in soup.find_all("link", rel="stylesheet"):
+css_url = link.get("href")
+if css_url.startswith("http"):
+csscontent = requests.get(cssurl).text
+cssname = os.path.basename(cssurl)
+with open(f"static/{dirname}/{cssname}", "w", encoding='utf-8') as css_file:
+cssfile.write(csscontent)
+
+# Baixando JS
+for script in soup.find_all("script"):
+js_url = script.get("src")
+if jsurl and jsurl.startswith("http"):
+jscontent = requests.get(jsurl).text
+jsname = os.path.basename(jsurl)
+with open(f"static/{dirname}/{jsname}", "w", encoding='utf-8') as js_file:
+jsfile.write(jscontent)
+
+driver.quit()
+
+return {"message": "Clonagem completa!", "files": f"/static/{dir_name}"}
+
+`
+
+templates/index.html
+
+
+Aqui está um exemplo simples de interface HTML onde você pode inserir a URL para clonar:
+
+`html
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clonador de Páginas Web</title>
+</head>
+<body>
+<h1>Clonador de Páginas Web</h1>
+<form action="/clone" method="post">
+<label for="url">URL da página para clonar:</label><br>
+<input type="text" id="url" name="url"><br><br>
+<input type="submit" value="Clonar">
+</form>
+</body>
+</html>
+`
+
+Executando o projeto
+
+Instale as dependências:
+
+`bash
+pip install -r requirements.txt
+`
+Execute o aplicativo:
+
+`bash
+uvicorn app:app --reload
+`
+Acesse http://127.0.0.1:8000/ no seu navegador.
+
+
+Nota
+
+Certifique-se de que você tem o Chrome instalado, pois o Selenium usa o ChromeDriver.
+
+Lembre-se de respeitar as políticas de robots.txt de websites e os direitos autorais ao clonar páginas.
+
+
+Se você precisar de mais funcionalidades ou ajustes no código, sinta-se à vontade para perguntar!
