@@ -197,7 +197,7 @@ def clone():
     is_valid, message = validate_url(url)
     if not is_valid:
         flash(message, 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('dashboard'))
     
     try:
         # Prepare a unique folder name for the cloned site
@@ -273,13 +273,13 @@ def clone():
             flash('Website cloned successfully!', 'success')
             return redirect(url_for('preview', site_dir=site_dir))
         else:
-            flash(f'Error cloning website: {clone_result["message"]}', 'danger')
-            return redirect(url_for('index'))
+            flash(f'Erro ao clonar o site: {clone_result["message"]}', 'danger')
+            return redirect(url_for('dashboard'))
             
     except Exception as e:
         logger.error(f"Clone error: {str(e)}", exc_info=True)
-        flash(f'An error occurred: {str(e)}', 'danger')
-        return redirect(url_for('index'))
+        flash(f'Ocorreu um erro: {str(e)}', 'danger')
+        return redirect(url_for('dashboard'))
 
 @app.route('/preview/<site_dir>')
 @login_required
