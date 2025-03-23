@@ -220,7 +220,14 @@ def clone():
         # Prepare a unique folder name for the cloned site
         parsed_url = urllib.parse.urlparse(url)
         domain = parsed_url.netloc
-        site_dir = secure_filename(domain)
+        base_dir = secure_filename(domain)
+        
+        # Find a unique directory name
+        counter = 1
+        site_dir = base_dir
+        while Website.query.filter_by(directory=site_dir).first() is not None:
+            site_dir = f"{base_dir}_{counter}"
+            counter += 1
 
         # Create directory for this clone
         target_dir = os.path.join('cloned_sites', site_dir)
