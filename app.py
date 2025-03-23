@@ -54,20 +54,20 @@ def login():
     """User login page"""
     if current_user.is_authenticated:
         return redirect(url_for('user_sites'))
-    
+
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user is None or not check_password_hash(user.password_hash, form.password.data):
             flash('Invalid email or password', 'danger')
             return redirect(url_for('login'))
-        
+
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
         if not next_page or urllib.parse.urlparse(next_page).netloc != '':
             next_page = url_for('index')
         return redirect(next_page)
-    
+
     return render_template('login.html', title='Sign In', form=form)
 
 @app.route('/logout')
@@ -81,17 +81,17 @@ def register():
     """User registration page"""
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-    
+
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data)
         user.password_hash = generate_password_hash(form.password.data)
         db.session.add(user)
         db.session.commit()
-        
+
         flash('Congratulations, you are now a registered user!', 'success')
         return redirect(url_for('login'))
-    
+
     return render_template('register.html', title='Register', form=form)
 
 @app.route('/')
@@ -118,7 +118,7 @@ def dashboard():
     from sqlalchemy import func
     # Retrieve recent websites for the current user (limit to 5)
     recent_websites = []
-    
+
     # Try using Supabase first
     try:
         from utils.supabase_client import get_recent_websites
@@ -128,7 +128,7 @@ def dashboard():
             supabase_websites = get_recent_websites(limit=5, tenant_id=tenant_id)
         else:
             supabase_websites = []
-        
+
         if supabase_websites:
             # Convert to Website objects
             for website_data in supabase_websites:
@@ -144,7 +144,7 @@ def dashboard():
             logger.info(f"Retrieved {len(recent_websites)} websites from Supabase")
     except Exception as supabase_error:
         logger.error(f"Error retrieving websites from Supabase: {str(supabase_error)}")
-        
+
         # Fall back to PostgreSQL if Supabase fails
         try:
             if current_user.is_authenticated:
@@ -154,7 +154,7 @@ def dashboard():
             logger.info(f"Retrieved {len(recent_websites)} websites from PostgreSQL")
         except Exception as pg_error:
             logger.error(f"Error retrieving websites from PostgreSQL: {str(pg_error)}")
-    
+
     return render_template('dashboard.html', recent_websites=recent_websites)
 
 @app.route('/sites')
@@ -162,12 +162,12 @@ def dashboard():
 def user_sites():
     """View all user's cloned websites"""
     websites = []
-    
+
     # Try Supabase first
     try:
         from utils.supabase_client import get_user_websites
         supabase_websites = get_user_websites(tenant_id=str(current_user.id))
-        
+
         if supabase_websites:
             # Convert to Website objects
             for website_data in supabase_websites:
@@ -182,13 +182,13 @@ def user_sites():
                 websites.append(website)
     except Exception as e:
         logger.error(f"Error retrieving user websites from Supabase: {str(e)}")
-        
+
         # Fall back to PostgreSQL
         try:
             websites = Website.query.filter_by(user_id=current_user.id).order_by(Website.created_at.desc()).all()
         except Exception as pg_error:
             logger.error(f"Error retrieving user websites from PostgreSQL: {str(pg_error)}")
-    
+
     return render_template('user_sites.html', websites=websites)
 
 @app.route('/profile')
@@ -205,94 +205,65 @@ def profile():
 def clone():
     """Clone a website based on the provided URL"""
     url = request.form.get('url', '')
-    
+
     if not url:
         flash('Por favor, insira uma URL', 'danger')
         return redirect(url_for('dashboard'))
-    
+
     # Validate URL
     is_valid, message = validate_url(url)
     if not is_valid:
         flash(message, 'danger')
         return redirect(url_for('dashboard'))
-    
+
     try:
         # Prepare a unique folder name for the cloned site
         parsed_url = urllib.parse.urlparse(url)
         domain = parsed_url.netloc
         site_dir = secure_filename(domain)
-        
+
         # Create directory for this clone
         target_dir = os.path.join('cloned_sites', site_dir)
         if os.path.exists(target_dir):
             # Clean up existing directory
             shutil.rmtree(target_dir)
-        
+
         # Clone the website
         clone_result = clone_website(url, target_dir)
-        
+
         if clone_result['success']:
             # Calculate stats
             file_count = sum(len(files) for _, _, files in os.walk(target_dir))
             size_bytes = sum(os.path.getsize(os.path.join(root, file)) 
                             for root, _, files in os.walk(target_dir) 
                             for file in files)
-            
-            # Try Supabase first
-            supabase_success = False
-            try:
-                from utils.supabase_client import create_website
-                if current_user.is_authenticated:
-                    website_data = {
-                        'tenant_id': str(current_user.id),
-                        'url': url,
-                        'domain': domain,
-                        'directory': site_dir,
-                        'file_count': file_count,
-                        'size_bytes': size_bytes,
-                        'user_id': current_user.id,
-                        'is_public': True
-                    }
-                    supabase_success = create_website(website_data) is not None
-            except Exception as e:
-                logger.error(f"Error saving to Supabase: {str(e)}")
 
-            # Fall back to PostgreSQL
-            if not supabase_success:
-                try:
-                    # Check if website already exists
-                    existing_website = Website.query.filter_by(directory=site_dir).first()
-                    if existing_website:
-                        # Update existing record
-                        existing_website.file_count = file_count
-                        existing_website.size_bytes = size_bytes
-                    else:
-                        # Create new record
-                        website = Website(
-                            url=url,
-                            domain=domain,
-                            directory=site_dir,
-                            file_count=file_count,
-                            size_bytes=size_bytes,
-                            user_id=current_user.id if current_user.is_authenticated else None,
-                            is_public=True
-                        )
-                        db.session.add(website)
-                    
-                    db.session.commit()
-                    logger.info(f"{'Updated' if existing_website else 'Added'} website {domain} in PostgreSQL")
-                    
-                except Exception as db_error:
-                    logger.error(f"Error saving to PostgreSQL: {str(db_error)}")
-                    db.session.rollback()
-                    # Continue even if DB save fails - we still have the cloned site
-            
+            try:
+                # Create new website record in PostgreSQL
+                website = Website(
+                    url=url,
+                    domain=domain,
+                    directory=site_dir,
+                    file_count=file_count,
+                    size_bytes=size_bytes,
+                    user_id=current_user.id if current_user.is_authenticated else None,
+                    is_public=True
+                )
+                db.session.add(website)
+                db.session.commit()
+                logger.info(f"Added website {domain} to PostgreSQL database")
+
+            except Exception as db_error:
+                logger.error(f"Error saving to PostgreSQL: {str(db_error)}")
+                db.session.rollback()
+                # Continue even if DB save fails - we still have the cloned site
+
             flash('Website cloned successfully!', 'success')
             return redirect(url_for('preview', site_dir=site_dir))
         else:
             flash(f'Erro ao clonar o site: {clone_result["message"]}', 'danger')
             return redirect(url_for('dashboard'))
-            
+
     except Exception as e:
         logger.error(f"Clone error: {str(e)}", exc_info=True)
         flash(f'Ocorreu um erro: {str(e)}', 'danger')
@@ -304,11 +275,11 @@ def preview(site_dir):
     """Show a preview of the cloned website"""
     site_dir = secure_filename(site_dir)
     target_dir = os.path.join('cloned_sites', site_dir)
-    
+
     if not os.path.exists(target_dir):
         flash('O site solicitado não existe', 'danger')
         return redirect(url_for('dashboard'))
-    
+
     # Find the main HTML file
     index_path = os.path.join(target_dir, 'index.html')
     if not os.path.exists(index_path):
@@ -319,14 +290,14 @@ def preview(site_dir):
         else:
             flash('Nenhum arquivo HTML encontrado no site clonado', 'danger')
             return redirect(url_for('dashboard'))
-    
+
     # Get file stats
     file_count = sum(len(files) for _, _, files in os.walk(target_dir))
     size_bytes = sum(os.path.getsize(os.path.join(root, file)) 
                     for root, _, files in os.walk(target_dir) 
                     for file in files)
     size_mb = size_bytes / (1024 * 1024)
-    
+
     return render_template('preview.html', 
                           site_dir=site_dir, 
                           file_count=file_count,
@@ -338,22 +309,22 @@ def download(site_dir):
     """Download the cloned website as a zip file"""
     site_dir = secure_filename(site_dir)
     target_dir = os.path.join('cloned_sites', site_dir)
-    
+
     if not os.path.exists(target_dir):
         flash('O site solicitado não existe', 'danger')
         return redirect(url_for('dashboard'))
-    
+
     # Create a zip file from the directory
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
     temp_file.close()
-    
+
     with zipfile.ZipFile(temp_file.name, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, _, files in os.walk(target_dir):
             for file in files:
                 file_path = os.path.join(root, file)
                 arcname = os.path.relpath(file_path, 'cloned_sites')
                 zipf.write(file_path, arcname)
-    
+
     return send_file(temp_file.name, 
                     as_attachment=True, 
                     download_name=f"{site_dir}.zip")
@@ -365,11 +336,11 @@ def view_file(site_dir, file_path):
     site_dir = secure_filename(site_dir)
     target_dir = os.path.join('cloned_sites', site_dir)
     file_path = os.path.join(target_dir, file_path)
-    
+
     if not os.path.exists(file_path) or not os.path.isfile(file_path):
         flash('O arquivo solicitado não existe', 'danger')
         return redirect(url_for('preview', site_dir=site_dir))
-    
+
     return send_file(file_path)
 
 @app.route('/delete/<site_dir>', methods=['POST'])
@@ -378,7 +349,7 @@ def delete(site_dir):
     """Delete a cloned website"""
     site_dir = secure_filename(site_dir)
     target_dir = os.path.join('cloned_sites', site_dir)
-    
+
     # Try to delete from Supabase first
     supabase_success = False
     try:
@@ -388,7 +359,7 @@ def delete(site_dir):
             logger.info(f"Deleted website {site_dir} from Supabase")
     except Exception as supabase_error:
         logger.error(f"Error deleting website from Supabase: {str(supabase_error)}")
-    
+
     # Fall back to PostgreSQL if Supabase delete fails
     if not supabase_success:
         try:
@@ -399,14 +370,14 @@ def delete(site_dir):
                 logger.info(f"Deleted website {site_dir} from PostgreSQL database")
         except Exception as e:
             logger.error(f"Error deleting website from PostgreSQL database: {str(e)}")
-    
+
     # Delete the files
     if os.path.exists(target_dir):
         shutil.rmtree(target_dir)
         flash('Site clonado excluído com sucesso', 'success')
     else:
         flash('O site solicitado não existe', 'danger')
-    
+
     return redirect(url_for('user_sites'))
 
 @app.errorhandler(404)
