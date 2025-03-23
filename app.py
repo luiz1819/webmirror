@@ -53,13 +53,13 @@ if not os.path.exists('cloned_sites'):
 def login():
     """User login page"""
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('user_sites'))
     
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+        user = User.query.filter_by(email=form.email.data).first()
         if user is None or not check_password_hash(user.password_hash, form.password.data):
-            flash('Invalid username or password', 'danger')
+            flash('Invalid email or password', 'danger')
             return redirect(url_for('login'))
         
         login_user(user, remember=form.remember_me.data)

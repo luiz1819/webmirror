@@ -25,11 +25,6 @@ class Website(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     is_public = db.Column(db.Boolean, default=True)
-    tenant_id = db.Column(db.String(36), nullable=True)
-    
-    __table_args__ = (
-        db.UniqueConstraint('tenant_id', 'directory', name='uq_tenant_directory'),
-    )
     
     def __repr__(self):
         return f'<Website {self.domain}>'
