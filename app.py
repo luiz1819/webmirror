@@ -105,10 +105,16 @@ def index():
     """Redirect to dashboard"""
     return redirect(url_for('dashboard'))
 
+@app.route('/site-builder')
+@login_required
+def site_builder():
+    """Render the site builder page"""
+    return render_template('site_builder.html')
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    """Render the dashboard page with the URL input form"""
+    """Render the dashboard page with statistics"""
     # Retrieve recent websites for the current user (limit to 5)
     recent_websites = []
     

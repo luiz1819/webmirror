@@ -72,8 +72,14 @@
                     <ul class="nav nav-pills flex-column mb-auto">
                         <li class="nav-item">
                             <a href="{{ url_for('dashboard') }}" class="nav-link active">
-                                <i class="bi bi-speedometer2 me-2"></i>
-                                Dashboard
+                                <i class="bi bi-grid-1x2-fill me-2"></i>
+                                Overview
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('site_builder') }}" class="nav-link text-white">
+                                <i class="bi bi-pencil-square me-2"></i>
+                                Site Builder
                             </a>
                         </li>
                         <li class="nav-item">
@@ -111,30 +117,69 @@
                     {% endif %}
                 {% endwith %}
 
-                <h1 class="h2 mb-4">Dashboard</h1>
+                <h1 class="h2 mb-4">Overview</h1>
                 
-                <!-- Clone Website Form -->
-                <div class="card mb-4 shadow">
-                    <div class="card-header bg-primary text-white">
-                        <h2 class="h5 mb-0">Clonar Novo Site</h2>
-                    </div>
-                    <div class="card-body">
-                        <form action="{{ url_for('clone') }}" method="post">
-                            <div class="row align-items-end">
-                                <div class="col-md-10">
-                                    <label for="url" class="form-label">URL do site que você deseja clonar:</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                                        <input type="url" class="form-control" id="url" name="url" placeholder="https://exemplo.com" required>
+                <!-- Statistics Cards -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card shadow">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="bi bi-globe fs-1 text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="card-subtitle mb-1 text-muted">Total Sites</h6>
+                                        <h2 class="card-title mb-0">{{ current_user.websites.count() }}</h2>
                                     </div>
                                 </div>
-                                <div class="col-md-2">
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="bi bi-cloud-download me-1"></i> Clonar
-                                    </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="bi bi-hdd-stack fs-1 text-success"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="card-subtitle mb-1 text-muted">Armazenamento</h6>
+                                        <h2 class="card-title mb-0">{{ (current_user.websites.with_entities(func.sum(Website.size_bytes)).scalar() or 0) / (1024 * 1024) | round(2) }} MB</h2>
+                                    </div>
                                 </div>
                             </div>
-                        </form>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="bi bi-file-earmark fs-1 text-info"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="card-subtitle mb-1 text-muted">Total Arquivos</h6>
+                                        <h2 class="card-title mb-0">{{ current_user.websites.with_entities(func.sum(Website.file_count)).scalar() or 0 }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="bi bi-clock-history fs-1 text-warning"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="card-subtitle mb-1 text-muted">Último Clone</h6>
+                                        <h2 class="card-title mb-0">{{ current_user.websites.order_by(Website.created_at.desc()).first().created_at.strftime('%d/%m') if current_user.websites.count() > 0 else '-' }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
