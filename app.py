@@ -184,13 +184,14 @@ def profile():
     return render_template('profile.html')
 
 @app.route('/clone', methods=['POST'])
+@login_required
 def clone():
     """Clone a website based on the provided URL"""
     url = request.form.get('url', '')
     
     if not url:
-        flash('Please enter a URL', 'danger')
-        return redirect(url_for('index'))
+        flash('Por favor, insira uma URL', 'danger')
+        return redirect(url_for('dashboard'))
     
     # Validate URL
     is_valid, message = validate_url(url)
@@ -281,14 +282,15 @@ def clone():
         return redirect(url_for('index'))
 
 @app.route('/preview/<site_dir>')
+@login_required
 def preview(site_dir):
     """Show a preview of the cloned website"""
     site_dir = secure_filename(site_dir)
     target_dir = os.path.join('cloned_sites', site_dir)
     
     if not os.path.exists(target_dir):
-        flash('The requested site clone does not exist', 'danger')
-        return redirect(url_for('index'))
+        flash('O site solicitado não existe', 'danger')
+        return redirect(url_for('dashboard'))
     
     # Find the main HTML file
     index_path = os.path.join(target_dir, 'index.html')
@@ -298,8 +300,8 @@ def preview(site_dir):
         if html_files:
             index_path = os.path.join(target_dir, html_files[0])
         else:
-            flash('No HTML file found in the cloned site', 'danger')
-            return redirect(url_for('index'))
+            flash('Nenhum arquivo HTML encontrado no site clonado', 'danger')
+            return redirect(url_for('dashboard'))
     
     # Get file stats
     file_count = sum(len(files) for _, _, files in os.walk(target_dir))
@@ -314,14 +316,15 @@ def preview(site_dir):
                           size_mb=round(size_mb, 2))
 
 @app.route('/download/<site_dir>')
+@login_required
 def download(site_dir):
     """Download the cloned website as a zip file"""
     site_dir = secure_filename(site_dir)
     target_dir = os.path.join('cloned_sites', site_dir)
     
     if not os.path.exists(target_dir):
-        flash('The requested site clone does not exist', 'danger')
-        return redirect(url_for('index'))
+        flash('O site solicitado não existe', 'danger')
+        return redirect(url_for('dashboard'))
     
     # Create a zip file from the directory
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
@@ -339,6 +342,7 @@ def download(site_dir):
                     download_name=f"{site_dir}.zip")
 
 @app.route('/view/<site_dir>/<path:file_path>')
+@login_required
 def view_file(site_dir, file_path):
     """View a specific file from the cloned website"""
     site_dir = secure_filename(site_dir)
@@ -346,12 +350,13 @@ def view_file(site_dir, file_path):
     file_path = os.path.join(target_dir, file_path)
     
     if not os.path.exists(file_path) or not os.path.isfile(file_path):
-        flash('The requested file does not exist', 'danger')
+        flash('O arquivo solicitado não existe', 'danger')
         return redirect(url_for('preview', site_dir=site_dir))
     
     return send_file(file_path)
 
 @app.route('/delete/<site_dir>', methods=['POST'])
+@login_required
 def delete(site_dir):
     """Delete a cloned website"""
     site_dir = secure_filename(site_dir)
@@ -381,18 +386,18 @@ def delete(site_dir):
     # Delete the files
     if os.path.exists(target_dir):
         shutil.rmtree(target_dir)
-        flash('Website clone deleted successfully', 'success')
+        flash('Site clonado excluído com sucesso', 'success')
     else:
-        flash('The requested site clone does not exist', 'danger')
+        flash('O site solicitado não existe', 'danger')
     
-    return redirect(url_for('index'))
+    return redirect(url_for('user_sites'))
 
 @app.errorhandler(404)
 def page_not_found(e):
-    flash('Page not found', 'danger')
-    return redirect(url_for('index'))
+    flash('Página não encontrada', 'danger')
+    return redirect(url_for('landing'))
 
 @app.errorhandler(500)
 def server_error(e):
-    flash('Server error: ' + str(e), 'danger')
-    return redirect(url_for('index'))
+    flash(f'Erro no servidor: {str(e)}', 'danger')
+    return redirect(url_for('landing'))

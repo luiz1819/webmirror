@@ -3,16 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Cloner - Clone sites com facilidade</title>
+    <title>Web Cloner - Clone e Archive Websites Facilmente</title>
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .hero {
+            padding: 8rem 0;
+            background: linear-gradient(145deg, rgba(13, 110, 253, 0.15) 0%, rgba(25, 25, 25, 0.3) 100%);
+            border-radius: 0.5rem;
+            margin-bottom: 3rem;
+        }
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        .hero-text {
+            max-width: 600px;
+        }
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .feature-card {
+            transition: transform 0.3s ease-in-out;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+        .navbar-cta .btn-primary {
+            padding: 0.5rem 1.5rem;
+        }
+        .cta-section {
+            background-color: rgba(13, 110, 253, 0.1);
+            border-radius: 1rem;
+            padding: 3rem;
+            margin-top: 3rem;
+            margin-bottom: 3rem;
+        }
+        .testimonial {
+            border-radius: 1rem;
+            padding: 2rem;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        footer {
+            padding: 3rem 0;
+            margin-top: 3rem;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+    </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('landing') }}">
+            <a class="navbar-brand" href="#">
                 <i class="bi bi-cloud-download-fill me-2"></i>
                 Web Cloner
             </a>
@@ -20,117 +74,146 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link" href="#features">Recursos</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#how-it-works">Como Funciona</a>
                     </li>
-                    {% if current_user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link btn btn-primary text-white ms-2" href="{{ url_for('dashboard') }}">
+                        <a class="nav-link" href="#faq">FAQ</a>
+                    </li>
+                </ul>
+                <div class="navbar-cta d-flex">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary me-2">
                             <i class="bi bi-speedometer2 me-1"></i> Dashboard
                         </a>
-                    </li>
                     {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link btn btn-outline-light ms-2" href="{{ url_for('login') }}">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link btn btn-primary text-white ms-2" href="{{ url_for('register') }}">Registrar</a>
-                    </li>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-light me-2">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary">
+                            <i class="bi bi-person-plus me-1"></i> Registrar
+                        </a>
                     {% endif %}
-                </ul>
+                </div>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <header class="py-5 text-center text-white hero-section">
+    <section class="hero">
         <div class="container">
-            <div class="row">
-                <div class="col-lg-8 mx-auto">
-                    <h1 class="display-4 fw-bold mb-3">Clone Sites com Facilidade</h1>
-                    <p class="lead mb-4">Uma ferramenta poderosa para copiar páginas web completas, perfeita para estudos, testes e arquivamento de conteúdo.</p>
-                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="row align-items-center">
+                <div class="col-lg-6 hero-text">
+                    <h1>Clone Websites com Apenas Um Clique</h1>
+                    <p class="lead mb-4">Capture páginas web completas, incluindo HTML, CSS, JavaScript e outros recursos. Armazene-os para acesso offline, referência ou arquivamento.</p>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
                         {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">
-                            <i class="bi bi-speedometer2 me-2"></i>Acessar Dashboard
-                        </a>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                                <i class="bi bi-speedometer2 me-2"></i> Ir para o Dashboard
+                            </a>
                         {% else %}
-                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 gap-3">
-                            <i class="bi bi-person-plus me-2"></i>Começar Agora
-                        </a>
-                        <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-4">
-                            <i class="bi bi-box-arrow-in-right me-2"></i>Login
-                        </a>
+                            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 me-md-2">
+                                <i class="bi bi-person-plus me-2"></i> Comece Grátis
+                            </a>
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-4">
+                                <i class="bi bi-box-arrow-in-right me-2"></i> Fazer Login
+                            </a>
                         {% endif %}
                     </div>
                 </div>
+                <div class="col-lg-6 d-none d-lg-block">
+                    <img src="https://dummyimage.com/600x400/7952b3/ffffff&text=Web+Cloner" alt="Web Cloner" class="img-fluid rounded shadow">
+                </div>
             </div>
         </div>
-    </header>
+    </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-5 bg-dark">
+    <section id="features" class="py-5">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="fw-bold">Recursos Poderosos</h2>
-                <p class="lead text-muted">Tudo o que você precisa para clonar sites com eficiência</p>
+                <h2 class="display-5 fw-bold">Recursos Principais</h2>
+                <p class="lead">Descubra por que nossa ferramenta é perfeita para salvaguardar conteúdo web</p>
             </div>
             <div class="row g-4">
                 <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow">
-                        <div class="card-body text-center">
-                            <i class="bi bi-code-slash feature-icon mb-3"></i>
-                            <h3 class="card-title h5">Clone Completo</h3>
-                            <p class="card-text">Extrai HTML, CSS, JavaScript e todos os recursos relacionados com precisão.</p>
+                    <div class="card feature-card h-100 shadow">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon bg-primary text-white mx-auto">
+                                <i class="bi bi-lightning-charge"></i>
+                            </div>
+                            <h3 class="h4">Clonagem Rápida</h3>
+                            <p class="text-muted">Clone sites inteiros em segundos com nossa ferramenta de alta performance.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow">
-                        <div class="card-body text-center">
-                            <i class="bi bi-eye feature-icon mb-3"></i>
-                            <h3 class="card-title h5">Visualização Prévia</h3>
-                            <p class="card-text">Veja exatamente como o site clonado aparece antes de baixar.</p>
+                    <div class="card feature-card h-100 shadow">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon bg-success text-white mx-auto">
+                                <i class="bi bi-download"></i>
+                            </div>
+                            <h3 class="h4">Download Completo</h3>
+                            <p class="text-muted">Baixe todos os recursos, incluindo imagens, CSS, JavaScript e arquivos localmente.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow">
-                        <div class="card-body text-center">
-                            <i class="bi bi-download feature-icon mb-3"></i>
-                            <h3 class="card-title h5">Download Fácil</h3>
-                            <p class="card-text">Obtenha todos os arquivos organizados em um arquivo zip pronto para uso.</p>
+                    <div class="card feature-card h-100 shadow">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon bg-info text-white mx-auto">
+                                <i class="bi bi-folder"></i>
+                            </div>
+                            <h3 class="h4">Organização Inteligente</h3>
+                            <p class="text-muted">Mantém a estrutura original do site para fácil navegação e referência.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow">
-                        <div class="card-body text-center">
-                            <i class="bi bi-folder feature-icon mb-3"></i>
-                            <h3 class="card-title h5">Organização Estruturada</h3>
-                            <p class="card-text">Mantém a estrutura original de diretórios para facilitar a navegação.</p>
+                    <div class="card feature-card h-100 shadow">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon bg-warning text-dark mx-auto">
+                                <i class="bi bi-eye"></i>
+                            </div>
+                            <h3 class="h4">Pré-visualização</h3>
+                            <p class="text-muted">Visualize o site clonado diretamente no navegador antes de baixar.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow">
-                        <div class="card-body text-center">
-                            <i class="bi bi-cloud feature-icon mb-3"></i>
-                            <h3 class="card-title h5">Armazenamento em Nuvem</h3>
-                            <p class="card-text">Seus sites clonados ficam salvos na nuvem para acesso a qualquer momento.</p>
+                    <div class="card feature-card h-100 shadow">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon bg-danger text-white mx-auto">
+                                <i class="bi bi-shield-lock"></i>
+                            </div>
+                            <h3 class="h4">Acesso Seguro</h3>
+                            <p class="text-muted">Sistema de contas para gerenciar todos os seus sites clonados com segurança.</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card h-100 border-0 shadow">
-                        <div class="card-body text-center">
-                            <i class="bi bi-shield-check feature-icon mb-3"></i>
-                            <h3 class="card-title h5">Seguro e Privado</h3>
-                            <p class="card-text">Suas informações e sites clonados são mantidos com segurança.</p>
+                    <div class="card feature-card h-100 shadow">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon bg-secondary text-white mx-auto">
+                                <i class="bi bi-cloud"></i>
+                            </div>
+                            <h3 class="h4">Armazenamento em Nuvem</h3>
+                            <p class="text-muted">Acesse seus sites clonados de qualquer lugar a qualquer momento.</p>
                         </div>
                     </div>
                 </div>
@@ -139,38 +222,32 @@
     </section>
 
     <!-- How It Works Section -->
-    <section id="how-it-works" class="py-5">
+    <section id="how-it-works" class="py-5 bg-dark">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="fw-bold">Como Funciona</h2>
-                <p class="lead text-muted">Em apenas três passos simples</p>
+                <h2 class="display-5 fw-bold">Como Funciona</h2>
+                <p class="lead">Três passos simples para salvar qualquer site para uso offline</p>
             </div>
-            <div class="row">
-                <div class="col-lg-4 mb-4">
-                    <div class="card border-0 shadow h-100">
-                        <div class="card-body text-center p-4">
-                            <div class="step-circle mb-3">1</div>
-                            <h3 class="h4">Insira a URL</h3>
-                            <p>Cole o endereço do site que deseja clonar no campo de entrada.</p>
-                        </div>
+            <div class="row g-5 align-items-center">
+                <div class="col-md-4 text-center">
+                    <div class="p-3">
+                        <div class="display-6 text-primary mb-3">1</div>
+                        <h3>Cole a URL</h3>
+                        <p>Insira o endereço do site que você deseja clonar no campo de entrada.</p>
                     </div>
                 </div>
-                <div class="col-lg-4 mb-4">
-                    <div class="card border-0 shadow h-100">
-                        <div class="card-body text-center p-4">
-                            <div class="step-circle mb-3">2</div>
-                            <h3 class="h4">Visualize o Resultado</h3>
-                            <p>Nosso sistema processa e mostra uma prévia do site clonado.</p>
-                        </div>
+                <div class="col-md-4 text-center">
+                    <div class="p-3">
+                        <div class="display-6 text-primary mb-3">2</div>
+                        <h3>Clique em "Clonar"</h3>
+                        <p>Nossa ferramenta processará o site, baixando todos os recursos necessários.</p>
                     </div>
                 </div>
-                <div class="col-lg-4 mb-4">
-                    <div class="card border-0 shadow h-100">
-                        <div class="card-body text-center p-4">
-                            <div class="step-circle mb-3">3</div>
-                            <h3 class="h4">Baixe os Arquivos</h3>
-                            <p>Faça o download do site completo em um arquivo zip organizado.</p>
-                        </div>
+                <div class="col-md-4 text-center">
+                    <div class="p-3">
+                        <div class="display-6 text-primary mb-3">3</div>
+                        <h3>Visualize & Baixe</h3>
+                        <p>Visualize o clone e baixe-o como um arquivo ZIP para uso offline.</p>
                     </div>
                 </div>
             </div>
@@ -178,33 +255,135 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="py-5 bg-primary text-white text-center">
+    <section class="py-5">
         <div class="container">
-            <h2 class="fw-bold mb-3">Pronto para começar?</h2>
-            <p class="lead mb-4">Crie uma conta gratuita hoje e comece a clonar sites em minutos.</p>
-            {% if current_user.is_authenticated %}
-            <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg px-5">
-                <i class="bi bi-speedometer2 me-2"></i>Ir para o Dashboard
-            </a>
-            {% else %}
-            <a href="{{ url_for('register') }}" class="btn btn-light btn-lg px-5">
-                <i class="bi bi-person-plus me-2"></i>Registrar-se Agora
-            </a>
-            {% endif %}
+            <div class="cta-section text-center">
+                <h2 class="display-6 mb-4">Pronto para começar a clonar sites?</h2>
+                <p class="lead mb-4">Crie uma conta gratuita agora e comece a arquivar seus sites favoritos.</p>
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                            <i class="bi bi-speedometer2 me-2"></i> Ir para o Dashboard
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                            <i class="bi bi-person-plus me-2"></i> Registrar Gratuitamente
+                        </a>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg px-4">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Fazer Login
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Perguntas Frequentes</h2>
+                <p class="lead">Encontre respostas para suas perguntas sobre o Web Cloner</p>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                    O Web Cloner pode clonar qualquer site?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p>O Web Cloner funciona melhor com sites estáticos ou sites com conteúdo dinâmico simples. Alguns sites com proteções anti-scraping, autenticação complexa ou conteúdo altamente dinâmico baseado em JavaScript podem ter limitações.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    É legal clonar sites?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p>Clonar sites para uso pessoal, educacional ou arquivamento geralmente é aceitável. No entanto, redistribuir, republicar ou usar comercialmente conteúdo clonado sem permissão pode violar leis de direitos autorais. Use esta ferramenta de forma responsável e respeite os termos de serviço dos sites originais.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                    Por quanto tempo os sites clonados ficam armazenados?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p>Os sites clonados ficam armazenados em sua conta até que você decida excluí-los. Recomendamos baixar os clones para armazenamento local como backup adicional.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                    Quais recursos de site são capturados?
+                                </button>
+                            </h2>
+                            <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p>O Web Cloner captura HTML, CSS, JavaScript, imagens e outros recursos estáticos. A ferramenta tenta manter a funcionalidade original do site na medida do possível, mas recursos dependentes de APIs externas ou servidores específicos podem não funcionar nos clones.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="py-4 bg-dark">
-        <div class="container text-center">
-            <p class="mb-0 text-muted">
-                Web Cloner &copy; 2025 - Uma ferramenta para fins educacionais
-            </p>
-            <div class="mt-2">
-                <small class="text-muted">
-                    Por favor, use esta ferramenta de forma responsável e respeite direitos autorais.
-                </small>
+    <footer class="text-center text-lg-start">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-md-12 mb-4 mb-md-0">
+                    <h5 class="text-uppercase mb-4">Web Cloner</h5>
+                    <p>
+                        Uma ferramenta poderosa para clonar websites para uso offline, arquivamento ou referência.
+                    </p>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4 mb-md-0">
+                    <h5 class="text-uppercase mb-4">Links Úteis</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <a href="#features" class="text-decoration-none">Recursos</a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#how-it-works" class="text-decoration-none">Como Funciona</a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#faq" class="text-decoration-none">FAQ</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-4 mb-md-0">
+                    <h5 class="text-uppercase mb-4">Contato</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-envelope me-2"></i> suporte@webcloner.com
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-github me-2"></i> github.com/webcloner
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-twitter me-2"></i> @webcloner
+                        </li>
+                    </ul>
+                </div>
             </div>
+        </div>
+        <div class="text-center p-3 mt-3" style="background-color: rgba(0, 0, 0, 0.2);">
+            © 2025 Web Cloner. Todos os direitos reservados.
         </div>
     </footer>
 
