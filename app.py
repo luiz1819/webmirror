@@ -235,8 +235,7 @@ def clone():
                 'directory': site_dir,
                 'file_count': file_count,
                 'size_bytes': size_bytes,
-                'is_public': True,
-                'tenant_id': str(current_user.id) if current_user.is_authenticated else None
+                'is_public': True
             }
             
             # Associate with user if logged in

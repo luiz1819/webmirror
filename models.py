@@ -17,7 +17,6 @@ class User(UserMixin, db.Model):
 
 class Website(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.String(36), nullable=False, index=True)
     url = db.Column(db.String(500), nullable=False)
     domain = db.Column(db.String(255), nullable=False)
     directory = db.Column(db.String(255), nullable=False)
