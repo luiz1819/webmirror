@@ -99,10 +99,34 @@ def index():
     """Render the home page with the URL input form"""
     # Retrieve recently cloned websites (limit to 5)
     recent_websites = []
+    
+    # Try using Supabase first
     try:
-        recent_websites = Website.query.order_by(Website.created_at.desc()).limit(5).all()
-    except Exception as e:
-        logger.error(f"Error retrieving recent websites: {str(e)}")
+        from utils.supabase_client import get_recent_websites
+        supabase_websites = get_recent_websites(limit=5)
+        
+        if supabase_websites:
+            # Convert to Website objects
+            for website_data in supabase_websites:
+                website = Website(
+                    url=website_data.get('url', ''),
+                    domain=website_data.get('domain', ''),
+                    directory=website_data.get('directory', ''),
+                    file_count=website_data.get('file_count', 0),
+                    size_bytes=website_data.get('size_bytes', 0),
+                    created_at=website_data.get('created_at')
+                )
+                recent_websites.append(website)
+            logger.info(f"Retrieved {len(recent_websites)} websites from Supabase")
+    except Exception as supabase_error:
+        logger.error(f"Error retrieving websites from Supabase: {str(supabase_error)}")
+        
+        # Fall back to PostgreSQL if Supabase fails
+        try:
+            recent_websites = Website.query.order_by(Website.created_at.desc()).limit(5).all()
+            logger.info(f"Retrieved {len(recent_websites)} websites from PostgreSQL")
+        except Exception as pg_error:
+            logger.error(f"Error retrieving websites from PostgreSQL: {str(pg_error)}")
     
     return render_template('index.html', recent_websites=recent_websites)
 
@@ -137,34 +161,60 @@ def clone():
         clone_result = clone_website(url, target_dir)
         
         if clone_result['success']:
-            # Create database entry for the cloned website
+            # Calculate stats
+            file_count = sum(len(files) for _, _, files in os.walk(target_dir))
+            size_bytes = sum(os.path.getsize(os.path.join(root, file)) 
+                            for root, _, files in os.walk(target_dir) 
+                            for file in files)
+            
+            # Create website data dictionary
+            website_data = {
+                'url': url,
+                'domain': domain,
+                'directory': site_dir,
+                'file_count': file_count,
+                'size_bytes': size_bytes,
+                'is_public': True
+            }
+            
+            # Associate with user if logged in
+            if current_user.is_authenticated:
+                website_data['user_id'] = current_user.id
+            
+            # Try to save to Supabase first
+            supabase_success = False
             try:
-                # Calculate stats
-                file_count = sum(len(files) for _, _, files in os.walk(target_dir))
-                size_bytes = sum(os.path.getsize(os.path.join(root, file)) 
-                                for root, _, files in os.walk(target_dir) 
-                                for file in files)
-                
-                # Create Website record
-                website = Website(
-                    url=url,
-                    domain=domain,
-                    directory=site_dir,
-                    file_count=file_count,
-                    size_bytes=size_bytes
-                )
-                
-                # Associate with user if logged in
-                if current_user.is_authenticated:
-                    website.user_id = current_user.id
-                
-                db.session.add(website)
-                db.session.commit()
-                logger.info(f"Added website {domain} to database")
-                
-            except Exception as db_error:
-                logger.error(f"Error saving website to database: {str(db_error)}")
-                # Continue even if DB save fails - we still have the cloned site
+                from utils.supabase_client import create_website
+                supabase_result = create_website(website_data)
+                if supabase_result:
+                    logger.info(f"Added website {domain} to Supabase")
+                    supabase_success = True
+            except Exception as supabase_error:
+                logger.error(f"Error saving website to Supabase: {str(supabase_error)}")
+            
+            # Fall back to PostgreSQL if Supabase fails
+            if not supabase_success:
+                try:
+                    # Create Website record for PostgreSQL
+                    website = Website(
+                        url=url,
+                        domain=domain,
+                        directory=site_dir,
+                        file_count=file_count,
+                        size_bytes=size_bytes
+                    )
+                    
+                    # Associate with user if logged in
+                    if current_user.is_authenticated:
+                        website.user_id = current_user.id
+                    
+                    db.session.add(website)
+                    db.session.commit()
+                    logger.info(f"Added website {domain} to PostgreSQL database")
+                    
+                except Exception as db_error:
+                    logger.error(f"Error saving website to PostgreSQL: {str(db_error)}")
+                    # Continue even if DB save fails - we still have the cloned site
             
             flash('Website cloned successfully!', 'success')
             return redirect(url_for('preview', site_dir=site_dir))
@@ -254,15 +304,26 @@ def delete(site_dir):
     site_dir = secure_filename(site_dir)
     target_dir = os.path.join('cloned_sites', site_dir)
     
-    # Try to delete from database first
+    # Try to delete from Supabase first
+    supabase_success = False
     try:
-        website = Website.query.filter_by(directory=site_dir).first()
-        if website:
-            db.session.delete(website)
-            db.session.commit()
-            logger.info(f"Deleted website {site_dir} from database")
-    except Exception as e:
-        logger.error(f"Error deleting website from database: {str(e)}")
+        from utils.supabase_client import delete_website
+        supabase_success = delete_website(site_dir)
+        if supabase_success:
+            logger.info(f"Deleted website {site_dir} from Supabase")
+    except Exception as supabase_error:
+        logger.error(f"Error deleting website from Supabase: {str(supabase_error)}")
+    
+    # Fall back to PostgreSQL if Supabase delete fails
+    if not supabase_success:
+        try:
+            website = Website.query.filter_by(directory=site_dir).first()
+            if website:
+                db.session.delete(website)
+                db.session.commit()
+                logger.info(f"Deleted website {site_dir} from PostgreSQL database")
+        except Exception as e:
+            logger.error(f"Error deleting website from PostgreSQL database: {str(e)}")
     
     # Delete the files
     if os.path.exists(target_dir):

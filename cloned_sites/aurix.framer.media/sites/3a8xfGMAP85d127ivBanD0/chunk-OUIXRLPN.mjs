@@ -1,0 +1,2 @@
+function e(t,a){return{description:"The Aurix template is Perfect for Founders and SaaS businesses, who want a modern, premium & responsive website to attract their potential customers.",favicon:"https://framerusercontent.com/assets/9Hkw5zgY9hGpgUf4mssdbH3rEdc.png",robots:"max-image-preview:large",socialImage:"https://framerusercontent.com/assets/fy9bGPV53FYWMXlyADKaCOwU7kc.png",title:"Aurix - Framer SaaS Template"}}export{e as a};
+//# sourceMappingURL=chunk-OUIXRLPN.mjs.map
