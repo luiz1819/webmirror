@@ -1,2 +1,0 @@
-import{__esmMin as e,init_jsx_runtime as t,p as n}from"./react.Bw_BZ6ND.mjs";function r(e){return t=>{let r=t.style?.backdropFilter||``,i=`${r} saturate(180%) brightness(150%) blur(10px)`.trim();return n(e,{...t,style:{...t.style,backdropFilter:i,zIndex:`10`}})}}var i=e(()=>{t()});export{i as init_BackdropFilterSaturate,r as withBackdropFilter};
-//# sourceMappingURL=BackdropFilterSaturate.B-VEVvpg.mjs.map
