@@ -99,13 +99,9 @@ def get_user_websites(tenant_id):
         logger.error(f"Error getting user websites: {str(e)}")
         return []
 
-def create_website(website_data, tenant_id):
+def create_website(website_data):
     """Create a new website record in Supabase"""
     try:
-        if not tenant_id:
-            return None
-
-        website_data['tenant_id'] = tenant_id
         response = supabase.table('websites').insert(website_data).execute()
         if response.data and len(response.data) > 0:
             return response.data[0]

@@ -243,16 +243,25 @@ def clone():
             if current_user.is_authenticated:
                 website_data['user_id'] = current_user.id
             
-            # Try to save to Supabase first
-            supabase_success = False
+            # Create Website record for PostgreSQL
             try:
-                from utils.supabase_client import create_website
-                supabase_result = create_website(website_data)
-                if supabase_result:
-                    logger.info(f"Added website {domain} to Supabase")
-                    supabase_success = True
-            except Exception as supabase_error:
-                logger.error(f"Error saving website to Supabase: {str(supabase_error)}")
+                website = Website(
+                    url=url,
+                    domain=domain,
+                    directory=site_dir,
+                    file_count=file_count,
+                    size_bytes=size_bytes,
+                    user_id=current_user.id if current_user.is_authenticated else None,
+                    is_public=True
+                )
+                
+                db.session.add(website)
+                db.session.commit()
+                logger.info(f"Added website {domain} to database")
+                
+            except Exception as db_error:
+                logger.error(f"Error saving website to database: {str(db_error)}")
+                db.session.rollback()
             
             # Fall back to PostgreSQL if Supabase fails
             if not supabase_success:
