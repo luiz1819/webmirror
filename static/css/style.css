@@ -1,0 +1,73 @@
+/* Custom styles for Web Cloner */
+
+/* Custom scrollbars for code preview */
+.code-preview {
+    max-height: 500px;
+    overflow: auto;
+}
+
+/* File tree styles */
+.file-tree {
+    max-height: 400px;
+    overflow-y: auto;
+    border-right: 1px solid var(--bs-border-color);
+}
+
+.file-tree a {
+    text-decoration: none;
+    color: var(--bs-light);
+    display: block;
+    padding: 0.25rem 0.5rem;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-tree a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.file-tree a.active {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* File type icons */
+.file-icon {
+    margin-right: 0.5rem;
+}
+
+/* Improve code presentation */
+pre {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 0.25rem;
+    padding: 1rem;
+}
+
+/* Main content area styles */
+.main-content {
+    min-height: calc(100vh - 56px);
+}
+
+/* Footer styles */
+footer {
+    margin-top: 2rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--bs-border-color);
+}
