@@ -1,6 +1,7 @@
 import os
 import logging
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, flash
+from models import db, User, Website
 import urllib.parse
 import shutil
 import zipfile
@@ -115,9 +116,16 @@ def site_builder():
 @login_required
 def dashboard():
     """Render the dashboard page with statistics"""
-    from sqlalchemy import func
-    # Retrieve recent websites for the current user (limit to 5)
-    recent_websites = []
+    try:
+        # Get user's recent websites
+        recent_websites = Website.query.filter_by(user_id=current_user.id)\
+            .order_by(Website.created_at.desc())\
+            .limit(5)\
+            .all()
+        return render_template('dashboard.html', recent_websites=recent_websites, Website=Website)
+    except Exception as e:
+        flash(f'Erro ao carregar dashboard: {str(e)}', 'danger')
+        return redirect(url_for('landing'))
 
     # Try using Supabase first
     try:
