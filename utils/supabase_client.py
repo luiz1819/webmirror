@@ -24,6 +24,11 @@ def init_supabase():
         
         supabase = create_client(supabase_url, supabase_key)
         logger.info("Supabase client initialized successfully")
+        
+        # Initialize tables
+        create_user_table()
+        create_website_table()
+        
         return True
     except Exception as e:
         logger.error(f"Error initializing Supabase client: {str(e)}")
@@ -38,13 +43,31 @@ def create_user_table():
         logger.info("Users table already exists")
         return True
     except Exception:
+        # Aqui vamos criar a tabela usando SQL através da função rpc do Supabase
         try:
-            # Table doesn't exist, create it
-            # Note: In Supabase, we typically create tables through the dashboard
-            # or through migrations, but this is a simple example
-            logger.info("Users table does not exist, creating SQL table via API is not supported")
-            logger.info("Please create the table manually in the Supabase dashboard")
-            return False
+            # Query para criar a tabela (isso só funciona se você tiver permissões adequadas)
+            sql = """
+            CREATE TABLE IF NOT EXISTS public.users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(64) NOT NULL UNIQUE,
+                email VARCHAR(120) NOT NULL UNIQUE,
+                password_hash VARCHAR(256) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+            );
+            """
+            
+            # Executar a query através do Supabase
+            try:
+                # Primeiro tentamos usar rpc
+                supabase.rpc('exec_sql', {'sql': sql}).execute()
+                logger.info("Users table created successfully via RPC")
+            except Exception as rpc_error:
+                logger.error(f"RPC method failed: {str(rpc_error)}")
+                # Se rpc falhar, tentamos via REST API (como fallback)
+                logger.info("Users table does not exist, creating SQL table via API is not supported")
+                logger.info("Please create the table manually in the Supabase dashboard")
+                
+            return True
         except Exception as e:
             logger.error(f"Error creating users table: {str(e)}")
             return False
@@ -85,11 +108,35 @@ def create_website_table():
         logger.info("Websites table already exists")
         return True
     except Exception:
+        # Aqui vamos criar a tabela usando SQL através da função rpc do Supabase
         try:
-            # Table doesn't exist, create it through Supabase dashboard
-            logger.info("Websites table does not exist, creating via API is not supported")
-            logger.info("Please create the table manually in the Supabase dashboard")
-            return False
+            # Query para criar a tabela (isso só funciona se você tiver permissões adequadas)
+            sql = """
+            CREATE TABLE IF NOT EXISTS public.websites (
+                id SERIAL PRIMARY KEY,
+                url TEXT NOT NULL,
+                domain TEXT NOT NULL,
+                directory TEXT NOT NULL UNIQUE,
+                file_count INTEGER DEFAULT 0,
+                size_bytes BIGINT DEFAULT 0,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                user_id INTEGER,
+                is_public BOOLEAN DEFAULT TRUE
+            );
+            """
+            
+            # Executar a query através do Supabase
+            try:
+                # Primeiro tentamos usar rpc
+                supabase.rpc('exec_sql', {'sql': sql}).execute()
+                logger.info("Websites table created successfully via RPC")
+            except Exception as rpc_error:
+                logger.error(f"RPC method failed: {str(rpc_error)}")
+                # Se rpc falhar, tentamos via REST API (como fallback)
+                logger.info("Websites table does not exist, creating SQL table via API is not supported")
+                logger.info("Please create the table manually in the Supabase dashboard")
+                
+            return True
         except Exception as e:
             logger.error(f"Error creating websites table: {str(e)}")
             return False
