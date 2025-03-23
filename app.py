@@ -99,6 +99,12 @@ def landing():
     """Render the landing page"""
     return render_template('landing.html')
 
+@app.route('/index')
+@login_required
+def index():
+    """Redirect to dashboard"""
+    return redirect(url_for('dashboard'))
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -229,13 +235,13 @@ def clone():
                 'directory': site_dir,
                 'file_count': file_count,
                 'size_bytes': size_bytes,
-                'is_public': True
+                'is_public': True,
+                'tenant_id': str(current_user.id) if current_user.is_authenticated else None
             }
             
             # Associate with user if logged in
             if current_user.is_authenticated:
                 website_data['user_id'] = current_user.id
-                tenant_id = str(current_user.id)
             
             # Try to save to Supabase first
             supabase_success = False
