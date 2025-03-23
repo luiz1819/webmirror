@@ -229,62 +229,53 @@ def clone():
                             for root, _, files in os.walk(target_dir) 
                             for file in files)
             
-            # Create website data dictionary
-            website_data = {
-                'url': url,
-                'domain': domain,
-                'directory': site_dir,
-                'file_count': file_count,
-                'size_bytes': size_bytes,
-                'is_public': True
-            }
-            
-            # Associate with user if logged in
-            if current_user.is_authenticated:
-                website_data['user_id'] = current_user.id
-            
-            # Create Website record for PostgreSQL
+            # Try Supabase first
+            supabase_success = False
             try:
-                website = Website(
-                    url=url,
-                    domain=domain,
-                    directory=site_dir,
-                    file_count=file_count,
-                    size_bytes=size_bytes,
-                    user_id=current_user.id if current_user.is_authenticated else None,
-                    is_public=True
-                )
-                
-                db.session.add(website)
-                db.session.commit()
-                logger.info(f"Added website {domain} to database")
-                
-            except Exception as db_error:
-                logger.error(f"Error saving website to database: {str(db_error)}")
-                db.session.rollback()
-            
-            # Fall back to PostgreSQL if Supabase fails
+                from utils.supabase_client import create_website
+                if current_user.is_authenticated:
+                    website_data = {
+                        'tenant_id': str(current_user.id),
+                        'url': url,
+                        'domain': domain,
+                        'directory': site_dir,
+                        'file_count': file_count,
+                        'size_bytes': size_bytes,
+                        'user_id': current_user.id,
+                        'is_public': True
+                    }
+                    supabase_success = create_website(website_data) is not None
+            except Exception as e:
+                logger.error(f"Error saving to Supabase: {str(e)}")
+
+            # Fall back to PostgreSQL
             if not supabase_success:
                 try:
-                    # Create Website record for PostgreSQL
-                    website = Website(
-                        url=url,
-                        domain=domain,
-                        directory=site_dir,
-                        file_count=file_count,
-                        size_bytes=size_bytes
-                    )
+                    # Check if website already exists
+                    existing_website = Website.query.filter_by(directory=site_dir).first()
+                    if existing_website:
+                        # Update existing record
+                        existing_website.file_count = file_count
+                        existing_website.size_bytes = size_bytes
+                    else:
+                        # Create new record
+                        website = Website(
+                            url=url,
+                            domain=domain,
+                            directory=site_dir,
+                            file_count=file_count,
+                            size_bytes=size_bytes,
+                            user_id=current_user.id if current_user.is_authenticated else None,
+                            is_public=True
+                        )
+                        db.session.add(website)
                     
-                    # Associate with user if logged in
-                    if current_user.is_authenticated:
-                        website.user_id = current_user.id
-                    
-                    db.session.add(website)
                     db.session.commit()
-                    logger.info(f"Added website {domain} to PostgreSQL database")
+                    logger.info(f"{'Updated' if existing_website else 'Added'} website {domain} in PostgreSQL")
                     
                 except Exception as db_error:
-                    logger.error(f"Error saving website to PostgreSQL: {str(db_error)}")
+                    logger.error(f"Error saving to PostgreSQL: {str(db_error)}")
+                    db.session.rollback()
                     # Continue even if DB save fails - we still have the cloned site
             
             flash('Website cloned successfully!', 'success')
