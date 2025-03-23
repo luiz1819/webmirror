@@ -1,0 +1,81 @@
+/* Custom Styles for Web Cloner */
+
+/* Feature icons */
+.feature-icon {
+    font-size: 3rem;
+    color: var(--bs-primary);
+    margin-bottom: 1rem;
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* Footer styling */
+.footer {
+    padding: 1.5rem 0;
+    margin-top: 3rem;
+}
+
+/* Loading spinner for form submission */
+.spinner-border {
+    display: none;
+}
+
+form.loading .spinner-border {
+    display: inline-block;
+}
+
+/* Alert positioning */
+.alert {
+    margin-bottom: 2rem;
+}
+
+/* Enhanced card styling */
+.card {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Button enhancements */
+.btn {
+    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.25rem;
+    font-size: 1.1rem;
+}
+
+/* List group styling */
+.list-group-item {
+    padding: 1rem 1.25rem;
+    border-left: none;
+    border-right: none;
+}
+
+/* Make sure the content takes up at least the full viewport height */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}
