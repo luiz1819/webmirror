@@ -111,10 +111,9 @@ def dashboard():
         from utils.supabase_client import get_recent_websites
         # Get current user's websites from Supabase
         if current_user.is_authenticated:
-            tenant_id = str(current_user.id)
-            supabase_websites = get_recent_websites(limit=5, tenant_id=tenant_id)
+            supabase_websites = get_recent_websites(limit=5, user_id=current_user.id)
         else:
-            supabase_websites = []
+            supabase_websites = get_recent_websites(limit=5)
         
         if supabase_websites:
             # Convert to Website objects
@@ -235,7 +234,6 @@ def clone():
             # Associate with user if logged in
             if current_user.is_authenticated:
                 website_data['user_id'] = current_user.id
-                tenant_id = str(current_user.id)
             
             # Try to save to Supabase first
             supabase_success = False

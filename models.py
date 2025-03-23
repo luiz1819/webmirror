@@ -17,19 +17,14 @@ class User(UserMixin, db.Model):
 
 class Website(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tenant_id = db.Column(db.String(36), nullable=False, index=True)
     url = db.Column(db.String(500), nullable=False)
     domain = db.Column(db.String(255), nullable=False)
-    directory = db.Column(db.String(255), nullable=False)
+    directory = db.Column(db.String(255), nullable=False, unique=True)
     file_count = db.Column(db.Integer, default=0)
     size_bytes = db.Column(db.BigInteger, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     is_public = db.Column(db.Boolean, default=True)
-    
-    __table_args__ = (
-        db.UniqueConstraint('tenant_id', 'directory', name='uq_tenant_directory'),
-    )
     
     def __repr__(self):
         return f'<Website {self.domain}>'
