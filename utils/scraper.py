@@ -6,11 +6,8 @@ import urllib.parse
 from urllib.parse import urljoin, urlparse
 import time
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import WebDriverException, TimeoutException
 import tempfile
+import trafilatura
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -41,31 +38,31 @@ def validate_url(url):
     except Exception as e:
         return False, f"URL validation error: {str(e)}"
 
-def setup_selenium():
+def get_website_text_content(url):
     """
-    Set up and return a Selenium WebDriver
+    This function takes a url and returns the main text content of the website.
+    The text content is extracted using trafilatura and easier to understand.
+    The results is not directly readable, better to be summarized by LLM before consume
+    by the user.
     
+    Args:
+        url (str): URL of the website to extract text from
+        
     Returns:
-        webdriver: Configured Chrome WebDriver
+        str: Extracted text content or None if failed
     """
-    options = Options()
-    options.add_argument('--headless')
-    options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--disable-gpu')
-    
-    # Setup Chrome WebDriver
     try:
-        driver = webdriver.Chrome(options=options)
-        driver.set_page_load_timeout(30)
-        return driver
+        # Send a request to the website
+        downloaded = trafilatura.fetch_url(url)
+        text = trafilatura.extract(downloaded)
+        return text
     except Exception as e:
-        logger.error(f"Error setting up Selenium: {str(e)}")
-        raise
+        logger.error(f"Error extracting text content: {str(e)}")
+        return None
 
 def clone_website(url, target_dir):
     """
-    Clone a website and save its content to the target directory
+    Clone a website and save its content to the target directory using requests and BeautifulSoup
     
     Args:
         url (str): URL of the website to clone
@@ -86,19 +83,18 @@ def clone_website(url, target_dir):
         parsed_url = urlparse(url)
         base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
         
-        # Setup Selenium
-        driver = setup_selenium()
+        # Fetch the page using requests
+        logger.info(f"Fetching URL with requests: {url}")
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        }
         
         try:
-            # Load the page with Selenium
-            logger.info(f"Fetching URL: {url}")
-            driver.get(url)
+            # Get the page content
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()  # Raise exception for 4XX/5XX responses
             
-            # Wait for the page to load completely
-            time.sleep(3)  # Give some time for JavaScript to execute
-            
-            # Get the page source
-            html_content = driver.page_source
+            html_content = response.text
             
             # Save the main HTML file
             index_path = os.path.join(target_dir, 'index.html')
@@ -158,21 +154,24 @@ def clone_website(url, target_dir):
                 'files_downloaded': len(processed_resources)
             }
             
-        except TimeoutException:
+        except requests.Timeout:
             logger.error("Timeout while loading the page")
             return {
                 'success': False,
                 'message': "Timeout while loading the page"
             }
-        except WebDriverException as e:
-            logger.error(f"Selenium error: {str(e)}")
+        except requests.HTTPError as e:
+            logger.error(f"HTTP error: {str(e)}")
             return {
                 'success': False,
-                'message': f"Selenium error: {str(e)}"
+                'message': f"HTTP error: {str(e)}"
             }
-        finally:
-            # Clean up Selenium
-            driver.quit()
+        except requests.RequestException as e:
+            logger.error(f"Request error: {str(e)}")
+            return {
+                'success': False,
+                'message': f"Request error: {str(e)}"
+            }
             
     except Exception as e:
         logger.error(f"Error cloning website: {str(e)}", exc_info=True)
