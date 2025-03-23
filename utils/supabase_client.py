@@ -1,5 +1,6 @@
 import os
 import logging
+import uuid
 from supabase import create_client, Client
 
 # Setup logging
@@ -16,22 +17,135 @@ supabase: Client = None
 def init_supabase():
     """Initialize the Supabase client"""
     global supabase
-    
+
     try:
         if not supabase_url or not supabase_key:
             logger.error("Supabase credentials are not set")
             return False
-        
+
         supabase = create_client(supabase_url, supabase_key)
         logger.info("Supabase client initialized successfully")
-        
+
         # Initialize tables
-        create_user_table()
-        create_website_table()
-        
+        create_websites_table()
+
         return True
     except Exception as e:
         logger.error(f"Error initializing Supabase client: {str(e)}")
+        return False
+
+def create_websites_table():
+    """Create websites table in Supabase if it doesn't exist"""
+    try:
+        sql = """
+        CREATE TABLE IF NOT EXISTS public.websites (
+            id SERIAL PRIMARY KEY,
+            tenant_id UUID NOT NULL,
+            url TEXT NOT NULL,
+            domain TEXT NOT NULL,
+            directory TEXT NOT NULL,
+            file_count INTEGER DEFAULT 0,
+            size_bytes BIGINT DEFAULT 0,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+            user_id INTEGER,
+            is_public BOOLEAN DEFAULT TRUE,
+            UNIQUE(tenant_id, directory)
+        );
+        CREATE INDEX IF NOT EXISTS idx_websites_tenant ON public.websites(tenant_id);
+        """
+
+        try:
+            supabase.rpc('exec_sql', {'sql': sql}).execute()
+            logger.info("Websites table created successfully")
+        except Exception as rpc_error:
+            logger.error(f"RPC method failed: {str(rpc_error)}")
+            logger.info("Please create the table manually in the Supabase dashboard")
+
+        return True
+    except Exception as e:
+        logger.error(f"Error creating websites table: {str(e)}")
+        return False
+
+def get_recent_websites(limit=5, tenant_id=None):
+    """Get recent websites for a specific tenant"""
+    try:
+        if not tenant_id:
+            return []
+
+        response = (supabase.table('websites')
+                   .select('*')
+                   .eq('tenant_id', tenant_id)
+                   .order('created_at', desc=True)
+                   .limit(limit)
+                   .execute())
+        return response.data
+    except Exception as e:
+        logger.error(f"Error getting recent websites: {str(e)}")
+        return []
+
+def get_user_websites(tenant_id):
+    """Get all websites for a specific tenant"""
+    try:
+        if not tenant_id:
+            return []
+
+        response = (supabase.table('websites')
+                   .select('*')
+                   .eq('tenant_id', tenant_id)
+                   .order('created_at', desc=True)
+                   .execute())
+        return response.data
+    except Exception as e:
+        logger.error(f"Error getting user websites: {str(e)}")
+        return []
+
+def create_website(website_data, tenant_id):
+    """Create a new website record in Supabase"""
+    try:
+        if not tenant_id:
+            return None
+
+        website_data['tenant_id'] = tenant_id
+        response = supabase.table('websites').insert(website_data).execute()
+        if response.data and len(response.data) > 0:
+            return response.data[0]
+        return None
+    except Exception as e:
+        logger.error(f"Error creating website record: {str(e)}")
+        return None
+
+def get_website_by_directory(directory, tenant_id):
+    """Get a website by its directory name for a specific tenant"""
+    try:
+        if not tenant_id:
+            return None
+
+        response = (supabase.table('websites')
+                   .select('*')
+                   .eq('tenant_id', tenant_id)
+                   .eq('directory', directory)
+                   .execute())
+        if response.data and len(response.data) > 0:
+            return response.data[0]
+        return None
+    except Exception as e:
+        logger.error(f"Error getting website by directory: {str(e)}")
+        return None
+
+def delete_website(directory, tenant_id):
+    """Delete a website by its directory name for a specific tenant"""
+    try:
+        if not tenant_id:
+            return False
+
+        response = (supabase.table('websites')
+                   .delete()
+                   .eq('tenant_id', tenant_id)
+                   .eq('directory', directory)
+                   .execute())
+        return True
+    except Exception as e:
+        logger.error(f"Error deleting website: {str(e)}")
         return False
 
 # User-related functions
@@ -55,7 +169,7 @@ def create_user_table():
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
             );
             """
-            
+
             # Executar a query através do Supabase
             try:
                 # Primeiro tentamos usar rpc
@@ -66,7 +180,7 @@ def create_user_table():
                 # Se rpc falhar, tentamos via REST API (como fallback)
                 logger.info("Users table does not exist, creating SQL table via API is not supported")
                 logger.info("Please create the table manually in the Supabase dashboard")
-                
+
             return True
         except Exception as e:
             logger.error(f"Error creating users table: {str(e)}")
@@ -99,120 +213,6 @@ def create_user(username, email, password_hash):
         logger.error(f"Error creating user: {str(e)}")
         return None
 
-# Website-related functions
-def create_website_table():
-    """Create websites table in Supabase if it doesn't exist"""
-    try:
-        # Check if the table exists by querying it
-        supabase.table('websites').select('*').limit(1).execute()
-        logger.info("Websites table already exists")
-        return True
-    except Exception:
-        # Aqui vamos criar a tabela usando SQL através da função rpc do Supabase
-        try:
-            # Query para criar a tabela (isso só funciona se você tiver permissões adequadas)
-            sql = """
-            CREATE TABLE IF NOT EXISTS public.websites (
-                id SERIAL PRIMARY KEY,
-                url TEXT NOT NULL,
-                domain TEXT NOT NULL,
-                directory TEXT NOT NULL UNIQUE,
-                file_count INTEGER DEFAULT 0,
-                size_bytes BIGINT DEFAULT 0,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-                user_id INTEGER,
-                is_public BOOLEAN DEFAULT TRUE
-            );
-            """
-            
-            # Executar a query através do Supabase
-            try:
-                # Primeiro tentamos usar rpc
-                supabase.rpc('exec_sql', {'sql': sql}).execute()
-                logger.info("Websites table created successfully via RPC")
-            except Exception as rpc_error:
-                logger.error(f"RPC method failed: {str(rpc_error)}")
-                # Se rpc falhar, tentamos via REST API (como fallback)
-                logger.info("Websites table does not exist, creating SQL table via API is not supported")
-                logger.info("Please create the table manually in the Supabase dashboard")
-                
-            return True
-        except Exception as e:
-            logger.error(f"Error creating websites table: {str(e)}")
-            return False
-
-def get_recent_websites(limit=5, user_id=None):
-    """
-    Get recent websites from Supabase
-    
-    Args:
-        limit (int): Maximum number of websites to return
-        user_id (int, optional): Filter by user ID if provided
-        
-    Returns:
-        list: List of website records
-    """
-    try:
-        query = supabase.table('websites').select('*')
-        
-        # Filter by user_id if provided
-        if user_id:
-            query = query.eq('user_id', user_id)
-            
-        # Order and limit
-        response = query.order('created_at', desc=True).limit(limit).execute()
-        return response.data
-    except Exception as e:
-        logger.error(f"Error getting recent websites: {str(e)}")
-        return []
-        
-def get_user_websites(user_id):
-    """
-    Get all websites for a specific user
-    
-    Args:
-        user_id (int): User ID to filter by
-        
-    Returns:
-        list: List of website records
-    """
-    try:
-        response = supabase.table('websites').select('*').eq('user_id', user_id).order('created_at', desc=True).execute()
-        return response.data
-    except Exception as e:
-        logger.error(f"Error getting user websites: {str(e)}")
-        return []
-
-def create_website(website_data):
-    """Create a new website record in Supabase"""
-    try:
-        response = supabase.table('websites').insert(website_data).execute()
-        if response.data and len(response.data) > 0:
-            return response.data[0]
-        return None
-    except Exception as e:
-        logger.error(f"Error creating website record: {str(e)}")
-        return None
-
-def get_website_by_directory(directory):
-    """Get a website by its directory name"""
-    try:
-        response = supabase.table('websites').select('*').eq('directory', directory).execute()
-        if response.data and len(response.data) > 0:
-            return response.data[0]
-        return None
-    except Exception as e:
-        logger.error(f"Error getting website by directory: {str(e)}")
-        return None
-
-def delete_website(directory):
-    """Delete a website by its directory name"""
-    try:
-        response = supabase.table('websites').delete().eq('directory', directory).execute()
-        return True
-    except Exception as e:
-        logger.error(f"Error deleting website: {str(e)}")
-        return False
 
 # Initialize Supabase connection when this module is imported
 init_supabase()
