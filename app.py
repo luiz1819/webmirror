@@ -239,7 +239,7 @@ def clone():
                             for file in files)
 
             try:
-                # Create new website record in PostgreSQL
+                # Create website record in both PostgreSQL and Supabase
                 website = Website(
                     url=url,
                     domain=domain,
@@ -249,14 +249,29 @@ def clone():
                     user_id=current_user.id if current_user.is_authenticated else None,
                     is_public=True
                 )
+
+                # Add to PostgreSQL
                 db.session.add(website)
                 db.session.commit()
-                logger.info(f"Added website {domain} to PostgreSQL database")
 
-            except Exception as db_error:
-                logger.error(f"Error saving to PostgreSQL: {str(db_error)}")
+                # Add to Supabase
+                from utils.supabase_client import create_website
+                website_data = {
+                    'tenant_id': str(current_user.id),
+                    'url': url,
+                    'domain': domain,
+                    'directory': site_dir,
+                    'file_count': file_count,
+                    'size_bytes': size_bytes,
+                    'user_id': current_user.id,
+                    'is_public': True
+                }
+                create_website(website_data)
+
+            except Exception as e:
+                logger.error(f"Error saving website to database: {str(e)}")
                 db.session.rollback()
-                # Continue even if DB save fails - we still have the cloned site
+                raise
 
             flash('Website cloned successfully!', 'success')
             return redirect(url_for('preview', site_dir=site_dir))

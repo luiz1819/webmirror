@@ -38,9 +38,9 @@ def create_websites_table():
     """Create websites table in Supabase if it doesn't exist"""
     try:
         sql = """
-        CREATE TABLE IF NOT EXISTS public.websites (
+        CREATE TABLE IF NOT EXISTS websites (
             id SERIAL PRIMARY KEY,
-            tenant_id UUID NOT NULL,
+            tenant_id TEXT NOT NULL,
             url TEXT NOT NULL,
             domain TEXT NOT NULL,
             directory TEXT NOT NULL,
@@ -48,10 +48,8 @@ def create_websites_table():
             size_bytes BIGINT DEFAULT 0,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
             user_id INTEGER,
-            is_public BOOLEAN DEFAULT TRUE,
-            UNIQUE(tenant_id, directory)
+            is_public BOOLEAN DEFAULT TRUE
         );
-        CREATE INDEX IF NOT EXISTS idx_websites_tenant ON public.websites(tenant_id);
         """
 
         try:
