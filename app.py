@@ -18,11 +18,18 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "default-dev-secret-key")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
+
+# Configure a URL do banco de dados PostgreSQL
+database_url = os.environ.get("DATABASE_URL")
+if database_url:
+    # Se o DATABASE_URL estiver definido, use-o
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+    }
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    logger.info("Database connection configured with DATABASE_URL")
 
 # Initialize extensions
 db.init_app(app)
@@ -90,7 +97,14 @@ def register():
 @app.route('/')
 def index():
     """Render the home page with the URL input form"""
-    return render_template('index.html')
+    # Retrieve recently cloned websites (limit to 5)
+    recent_websites = []
+    try:
+        recent_websites = Website.query.order_by(Website.created_at.desc()).limit(5).all()
+    except Exception as e:
+        logger.error(f"Error retrieving recent websites: {str(e)}")
+    
+    return render_template('index.html', recent_websites=recent_websites)
 
 @app.route('/clone', methods=['POST'])
 def clone():
@@ -123,6 +137,35 @@ def clone():
         clone_result = clone_website(url, target_dir)
         
         if clone_result['success']:
+            # Create database entry for the cloned website
+            try:
+                # Calculate stats
+                file_count = sum(len(files) for _, _, files in os.walk(target_dir))
+                size_bytes = sum(os.path.getsize(os.path.join(root, file)) 
+                                for root, _, files in os.walk(target_dir) 
+                                for file in files)
+                
+                # Create Website record
+                website = Website(
+                    url=url,
+                    domain=domain,
+                    directory=site_dir,
+                    file_count=file_count,
+                    size_bytes=size_bytes
+                )
+                
+                # Associate with user if logged in
+                if current_user.is_authenticated:
+                    website.user_id = current_user.id
+                
+                db.session.add(website)
+                db.session.commit()
+                logger.info(f"Added website {domain} to database")
+                
+            except Exception as db_error:
+                logger.error(f"Error saving website to database: {str(db_error)}")
+                # Continue even if DB save fails - we still have the cloned site
+            
             flash('Website cloned successfully!', 'success')
             return redirect(url_for('preview', site_dir=site_dir))
         else:
@@ -211,6 +254,17 @@ def delete(site_dir):
     site_dir = secure_filename(site_dir)
     target_dir = os.path.join('cloned_sites', site_dir)
     
+    # Try to delete from database first
+    try:
+        website = Website.query.filter_by(directory=site_dir).first()
+        if website:
+            db.session.delete(website)
+            db.session.commit()
+            logger.info(f"Deleted website {site_dir} from database")
+    except Exception as e:
+        logger.error(f"Error deleting website from database: {str(e)}")
+    
+    # Delete the files
     if os.path.exists(target_dir):
         shutil.rmtree(target_dir)
         flash('Website clone deleted successfully', 'success')

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preview Cloned Website - Web Cloner</title>
+    <title>Preview - Web Cloner</title>
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -25,12 +25,30 @@
                             <i class="bi bi-house-door me-1"></i> Home
                         </a>
                     </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('register') }}">
+                            <i class="bi bi-person-plus me-1"></i> Register
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container my-4">
+    <div class="container my-5">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -42,116 +60,101 @@
             {% endif %}
         {% endwith %}
 
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card mb-4">
-                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h2 class="mb-0">
-                            <i class="bi bi-check-circle me-2"></i>
-                            Website Cloned Successfully
+                            <i class="bi bi-eye me-2"></i>
+                            Preview: {{ site_dir }}
                         </h2>
-                        <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-light">
-                            <i class="bi bi-arrow-left me-1"></i> Back to Home
-                        </a>
+                        <div class="btn-group">
+                            <a href="{{ url_for('download', site_dir=site_dir) }}" class="btn btn-success">
+                                <i class="bi bi-download me-1"></i> Download
+                            </a>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                <i class="bi bi-trash me-1"></i> Delete
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <div class="row">
+                        <div class="row mb-4">
                             <div class="col-md-6">
-                                <h4>Clone Details</h4>
-                                <ul class="list-group mb-4">
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Domain
-                                        <span class="badge bg-primary">{{ site_dir }}</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Files Cloned
-                                        <span class="badge bg-info">{{ file_count }}</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Total Size
-                                        <span class="badge bg-secondary">{{ size_mb }} MB</span>
-                                    </li>
-                                </ul>
+                                <div class="card bg-dark">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><i class="bi bi-info-circle me-2"></i>Statistics</h5>
+                                        <ul class="list-group list-group-flush">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                Total Files:
+                                                <span class="badge bg-primary rounded-pill">{{ file_count }}</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                Total Size:
+                                                <span class="badge bg-primary rounded-pill">{{ size_mb }} MB</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                Location:
+                                                <span class="badge bg-secondary">cloned_sites/{{ site_dir }}</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="d-grid gap-2">
-                                    <a href="{{ url_for('download', site_dir=site_dir) }}" class="btn btn-primary btn-lg">
-                                        <i class="bi bi-file-earmark-zip me-2"></i>
-                                        Download as ZIP
-                                    </a>
-                                    
-                                    <a href="{{ url_for('view_file', site_dir=site_dir, file_path='index.html') }}" 
-                                       class="btn btn-info btn-lg" target="_blank">
-                                        <i class="bi bi-eye me-2"></i>
-                                        View Cloned Site
-                                    </a>
-
-                                    <form action="{{ url_for('delete', site_dir=site_dir) }}" method="post" 
-                                          onsubmit="return confirm('Are you sure you want to delete this cloned website?');">
-                                        <button type="submit" class="btn btn-danger btn-lg w-100">
-                                            <i class="bi bi-trash me-2"></i>
-                                            Delete Clone
-                                        </button>
-                                    </form>
+                                <div class="card h-100 bg-dark">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><i class="bi bi-file-earmark-code me-2"></i>Included Files</h5>
+                                        <div class="file-types">
+                                            <span class="badge bg-danger mb-2 me-2">HTML</span>
+                                            <span class="badge bg-success mb-2 me-2">CSS</span>
+                                            <span class="badge bg-warning mb-2 me-2">JavaScript</span>
+                                            <span class="badge bg-info mb-2 me-2">Images</span>
+                                            <span class="badge bg-primary mb-2 me-2">Fonts</span>
+                                            <span class="badge bg-secondary mb-2 me-2">Other Assets</span>
+                                        </div>
+                                        <p class="mt-3">
+                                            <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                                            Some dynamic content or server-side code may not work properly in the cloned version.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card bg-dark">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-window me-2"></i>Website Preview</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="ratio ratio-16x9">
+                                    <iframe src="{{ url_for('view_file', site_dir=site_dir, file_path='index.html') }}" 
+                                            title="Preview" 
+                                            allowfullscreen></iframe>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h3 class="mb-0">
-                            <i class="bi bi-info-circle me-2"></i>
-                            What Next?
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <p>Your website has been successfully cloned! Here's what you can do next:</p>
-                        
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="card h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <i class="bi bi-eye-fill fs-1 text-primary mb-2"></i>
-                                        <h4>Preview</h4>
-                                        <p>View the cloned website in your browser to check how it looks.</p>
-                                        <a href="{{ url_for('view_file', site_dir=site_dir, file_path='index.html') }}" 
-                                           class="btn btn-sm btn-outline-primary" target="_blank">
-                                            Preview Site
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <div class="card h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <i class="bi bi-file-earmark-zip-fill fs-1 text-success mb-2"></i>
-                                        <h4>Download</h4>
-                                        <p>Download the complete website as a ZIP file for offline use.</p>
-                                        <a href="{{ url_for('download', site_dir=site_dir) }}" 
-                                           class="btn btn-sm btn-outline-success">
-                                            Download ZIP
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <div class="card h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <i class="bi bi-plus-circle-fill fs-1 text-info mb-2"></i>
-                                        <h4>Clone Another</h4>
-                                        <p>Clone another website using our easy-to-use tool.</p>
-                                        <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-info">
-                                            Clone New Site
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this cloned website? This action cannot be undone.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{{ url_for('delete', site_dir=site_dir) }}" method="post">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
                 </div>
             </div>
         </div>
